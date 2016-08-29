@@ -1,264 +1,4 @@
-// {
-//    "usbKeysList": [
-//       {
-//          "id": 903190317851904,
-//          "accountId": "1-ONVCOX",
-//          "accountNum": "1-ONVCOX",
-//          "accountName": "郭微测试",
-//          "login": "GAOJQ",
-//          "lockNum": "ZZ320149201",
-//          "lockMode": "",
-//          "prodId": "1-12JDGY3",
-//          "prodName": "黑龙江：云计价5.0（全专业）-年费版",
-//          "prodPartNum": "",
-//          "prodType": "计价",
-//          "prodSubType": "单机版",
-//          "packageType": "单品",
-//          "nodeNum": "1",
-//          "installDate": "08/23/2016",
-//          "effStartDate": "08/23/2016",
-//          "effEndDate": "12/01/2016",
-//          "assetId": "1-1HE7RK8",
-//          "parAssetId": "1-1HE7RK4",
-//          "rootAssetId": "1-1HE7RK4",
-//          "syncTime": 1472006463000
-//       }
-//    ]
-// }
-P5Pages= (function($){
-
-function P5Page(url,imgSrc){
-	this.actionURL = url;
-	this.imgSrc = imgSrc;
-	this.lockExist ={};
-	this.accountId={};
-	this.accountIdCheck = true;
-}
-
-P5Page.prototype.selectComponent ={
-
-	settings:{
-		versionid1:'',
-		versionid2:'',
-		versionid3:''
-	},
-
-	productPrice:function(options){
-		$.extend(this.settings,options);
-		
-							return [
-											{	
-												"name": "云计价+数据包",
-												"price":"2400",
-												"suitVersionId":this.settings.versionid1
-												
-											},
-											{	
-												"name": "云计价",
-												"price":"1800",
-												"suitVersionId":this.settings.versionid2
-												
-											},
-											{	
-												"name": "云计价+数据包+广材信息服务",
-												"price":"3980",
-												"suitVersionId":this.settings.versionid3
-												
-											}
-
-											];
-						},
-
-	create:function(options){
-		var productPrice = this.productPrice(options);
-		var selectComponent = "";
-	
-		$.each(productPrice,function(i){
-  		  selectComponent = selectComponent + '<option'+' value='+productPrice[i].suitVersionId+'>'+productPrice[i].name+'</option>';		
-  		});
-  		return selectComponent;
-	}
-
-}
-
-P5Page.prototype.errorMSG = {
-	busynetwork:function(){
-		 var msg = '网络繁忙，请稍后再试'
-		 return msg
-	},
-
-
-	mismatch:function(locker){
-		var msg='您所查询的锁号'+locker+"不在此次升级范围内！"
-		return msg
-	},
-	emptyinput:function(){
-		var msg='请输入有效锁号！'
-		return msg
-	},
-	exist:function(){
-		var msg= '您所查询的锁号信息已经存在！'
-		return msg
-	},
-	differentAccount:function(){
-		var msg= '您所查询的锁号不能同时下单！'
-		return msg
-	}
-
-}
-
-P5Page.prototype.renderErr = function(root,msg){
-	
-	root.html('<p class="error-msg">'+msg+'</p>');
-}
-
-
-P5Page.prototype.formatDate = function(datastr){
-
-		var dates = datastr.split('/');
-	
-			var year = dates[2]||"";
-			var month =dates[0]||"";
-			var date = dates[1]||""
-	
-		 return year+'-'+month+'-'+date
-}
-
-P5Page.prototype.removeDuplicate = function(usbkey,keycollection){
-	var uniKey = [];
-
-					 		if(usbkey.indexOf(',')>0){
-					 			var usbkeyCollection = usbkey.split(',');
-					 			
-					 			for(var i=0;i<usbkeyCollection.length;i++){
-					 				if(keycollection[usbkeyCollection[i]]===undefined){
-					 					uniKey.push(usbkeyCollection[i]);
-					 				}
-					 				
-					 			}
-					 			
-					 		}
-					 		else{
-					 			if(keycollection[usbkey]===undefined){
-					 					uniKey.push(usbkey);
-					 				}
-					 		}
-					 		
-					 		return uniKey;
-
-}
-
-P5Page.prototype.filterKeys =function(lockkey){
-	var lockExist = this.lockExist;
-	var unikey;
-		
-			if(lockkey===""||$.trim(lockkey)===" "){
-				return this.errorMSG.emptyinput;
-
-			}else {
-				unikey = this.removeDuplicate(lockkey,lockExist)
-				if (unikey.length===0){
-					return this.errorMSG.exist
-				}else{
-					return unikey
-				}
-			}
-
-}
-
-
-
-
-P5Page.prototype.trigger = function(){
-	this.ajaxCall();
-}
-
-
-
-
-
-P5Page.prototype.ajaxCall = function(usbkeys,callback,docallback){
-
-	$.ajax({
-		url:this.actionURL,
-		data:{"usbKeys":usbkeys},
-		cache:false,
-		contentType: "application/x-www-form-urlencoded;charset=UTF-8",
-		method:'POST',
-		error:function(err){console.log('error:'+err)},
-		success:function(data){
-			if(typeof callback ==='function'){
-				
-				callback(data,usbkeys);
-			}
-		},
-		complete:function(){
-
-			if (typeof docallback === 'function'){
-				docallback();
-			}
-		}
-
-	})
-},
-
-
-
-P5Page.prototype.renderTo = function(selectComponent,productPrice,options,target){
-
-
-	var settings = {
-		picture:"",
-		value:{
-			lockNum:"",
-		prodSubType:"",
-		nodeNum:"",
-		effEndDate:""
-		},
-	}
-	$.extend(settings,options);
-
-	var newDate = target.formatDate(settings.value.effEndDate);
-
-	var template = '<tr>'+'<td class=\"first\"\>'+settings.value.lockNum+
- 					'<input type="text" name="lockId"'+'value='+settings.value.lockNum+'>'+
-					'</td>'+
-					'<td><div class="lock-img">'+settings.value.prodSubType+
-					'<input type="text" name="lockType"'+'value='+settings.value.prodSubType+'>'+
-					'<img src="'+settings.picture+'"/>'+
-					'</div></td>'+
-					'<td>'+newDate+'</td>'+
-					'<td class="locknode">'+settings.value.nodeNum+
-					'<input type="text" name="nodeNum"'+'value='+settings.value.nodeNum+'>'+
-
-					'</td>'+
-					'<td>'+'<select name="suiteId">'+selectComponent+'</select>'+'</td>'+
-					'<td>'+'一年'+'</td>'+
-					'<td class=\"\price\"\>'+'&yen;'+'<span>'+(productPrice[0].price)*settings.value.nodeNum+'</span>'+
-					'</td>'+
-					'<td><input type="button" class="continue-confirm" value="删除"></input></td>'+
-					
-					'</tr>';
-		return template;
-
-}
-
-P5Page.prototype.calculateMoney = function(array){
-	var sumMoney = 0;
-	$.each(array,function(i,item){
- 			sumMoney = sumMoney +Number(item.innerText);
-
- 		})
- 		return sumMoney;
-}
-return {
-	P5Page:P5Page
-}
-})(jQuery)
-
-
-
-
+'use strict'
 $.fn.classChange = function(){
 	var defaults = {
 		classone:"classone",
@@ -314,103 +54,20 @@ $.fn.tabShowandHide = function(){
 	})
 }
 
-
-
-
+function getLockInfo(){
+	// trigger();
+}
 
 $(function(){
 
 		$('.tabs ul').tabShowandHide();
 		var actionURL= window.visitor.path + '/p5'
 		var imgSrc = "//static.glodon.com/open/market2/css/page/images/p5/";
-
-
-		$.mockjax({
-	url:actionURL,
-	status:200,
-	responseTime:900,
-	responseText:{
-   "usbKeysList": [
-      {
-         "id": 903190317851904,
-         "accountId": "111",
-         "accountNum": "1-ONVCOX",
-         "accountName": "郭微测试",
-         "login": "GAOJQ",
-         "lockNum": "1",
-         "lockMode": "",
-         "prodId": "1-12JDGY3",
-         "prodName": "黑龙江：云计价5.0（全专业）-年费版",
-         "prodPartNum": "",
-         "prodType": "计价",
-         "prodSubType": "单机版",
-         "packageType": "单品",
-         "nodeNum": "1",
-         "installDate": "08/23/2016",
-         "effStartDate": "08/23/2016",
-         "effEndDate": "12/01/2016",
-         "assetId": "1-1HE7RK8",
-         "parAssetId": "1-1HE7RK4",
-         "rootAssetId": "1-1HE7RK4",
-         "syncTime": 1472006463000
-      },
-      //  {
-      //    "id": 903190317851904,
-      //    "accountId": "1-ONVCOX",
-      //    "accountNum": "1-ONVCOX",
-      //    "accountName": "郭微测试",
-      //    "login": "GAOJQ",
-      //    "lockNum": "2",
-      //    "lockMode": "",
-      //    "prodId": "1-12JDGY3",
-      //    "prodName": "黑龙江：云计价5.0（全专业）-年费版",
-      //    "prodPartNum": "",
-      //    "prodType": "计价",
-      //    "prodSubType": "单机版",
-      //    "packageType": "单品",
-      //    "nodeNum": "1",
-      //    "installDate": "08/23/2016",
-      //    "effStartDate": "08/23/2016",
-      //    "effEndDate": "12/01/2016",
-      //    "assetId": "1-1HE7RK8",
-      //    "parAssetId": "1-1HE7RK4",
-      //    "rootAssetId": "1-1HE7RK4",
-      //    "syncTime": 1472006463000
-      // },
-       {
-         "id": 903190317851904,
-         "accountId": "111",
-         "accountNum": "1-ONVCOX",
-         "accountName": "郭微测试",
-         "login": "GAOJQ",
-         "lockNum": "3",
-         "lockMode": "",
-         "prodId": "1-12JDGY3",
-         "prodName": "黑龙江：云计价5.0（全专业）-年费版",
-         "prodPartNum": "",
-         "prodType": "计价",
-         "prodSubType": "单机版",
-         "packageType": "单品",
-         "nodeNum": "1",
-         "installDate": "08/23/2016",
-         "effStartDate": "08/23/2016",
-         "effEndDate": "12/01/2016",
-         "assetId": "1-1HE7RK8",
-         "parAssetId": "1-1HE7RK4",
-         "rootAssetId": "1-1HE7RK4",
-         "syncTime": 1472006463000
-      }
-   ]
-}
-		
-})
-
-
 		var p5mini = new P5Pages.P5Page(actionURL,imgSrc);
 		
-		var lockExist =p5mini.lockExist;
-		var accountId=p5mini.accountId;
-		var accountIdCheck = p5mini.accountIdCheck;
+		// var lockExist =p5mini.lockExist;
+		// var accountId=p5mini.accountId;
+		// var accountIdCheck = p5mini.accountIdCheck;
 		var productPrice = p5mini.selectComponent.productPrice({
 			versionid1:$("input[name='typeP5DataPacket']").attr("value"),
 			versionid2:$("input[name='typeP5']").attr("value"),
@@ -425,27 +82,39 @@ $(function(){
 			versionid3:$("input[name='typeP5DataPacketGc']").attr("value")
 		});
 
+			$('.footer-text label').on('click',function(){
+		$('.footer-activity').css('z-index','999');
+	})
+
+  	$(".close-btn").on('click',function(){
+  		$('.footer-activity').css('z-index','-1')
+  	})
+
 
 		var successCallback = function(data,usbkey){
+
+			$(".btn-add").removeAttr('disabled')
 			var template = "";
 			$('.mini-info').html(' ');
 
+			$('.info-panel').show();
+
 			if(typeof data ==='object'){
 				if(data.usbKeysList.length ===0){
-					lockExist[usbkey] = '0';
+					p5mini.lockExist[usbkey] = '0';
 					p5mini.renderErr($('.mini-info'),p5mini.errorMSG.mismatch(usbkey));
 				}else{
 
 					$.each(data.usbKeysList,function(i,value){
-						if($.isEmptyObject(accountId)){
-									accountId[value.accountId]='0';
+						if($.isEmptyObject(p5mini.accountId)){
+									p5mini.accountId[value.accountId]='0';
 									
 								}else if(accountId[value.accountId]===undefined){
-									accountIdCheck = false;
+									p5mini.accountIdCheck = false;
 								}
-						if(accountIdCheck === true){
+						if(p5mini.accountIdCheck === true){
 									
-							lockExist[value.lockNum]='0';	
+							p5mini.lockExist[value.lockNum]='0';	
 										
 										if(value.prodSubType == '单机版'){
 											var picture = imgSrc+'p5locka.png';
@@ -473,31 +142,38 @@ $(function(){
 
 		var doCallback = function(){
 
-				$('.btn-sub').removeAttr('disabled');
-							$('.btn-sub').css('color','#fff');
-							
-							$('.btn-add').removeClass('btn-clickon');
+				if($("#lockForm").find('.continue-confirm').length===0){
+			  		$('.btn-sub').attr('disabled','true');
+			  		$('.btn-sub').css('color','grey');
+	  			}else{
+	  				$('.btn-sub').removeAttr('disabled');
+	  				$('.btn-sub').css('color','#fff');
+	  					$('.btn-add').removeClass('btn-clickon');
 							$('.btn-add').addClass('btn-search');
+	  			}	
+						
 							$('body').css('cursor','default');
-
-							var sumMoney = p5mini.calculateMoney($(".price>span"));	
-							$(".sum-money").text(sumMoney);	
 						};
 
-
+	 var errCallback = function(){
+	 		$(".btn-add").removeAttr('disabled');
+			p5mini.renderErr($('.mini-info'),p5normal.errorMSG.busynetwork());
+		}
 
 	$(".btn-add").on('click',function(){
 		
+		$(".btn-add").attr('disabled','disabled')
 		var usbkeys = $('.input-lock').val();
 
 		var searchKey = p5mini.filterKeys(usbkeys);
 
 		if(typeof searchKey ==='function'){
 			p5mini.renderErr($('.mini-info'),searchKey())
+			$(".btn-add").removeAttr('disabled')
 		 	return;
 		}
-	
-		p5mini.ajaxCall(searchKey,successCallback,doCallback);
+	$('body').css('cursor','wait');
+		p5mini.ajaxCall(searchKey,successCallback,doCallback,errCallback);
 
 	});
 
@@ -526,12 +202,14 @@ $(function(){
 		var node_delete = $this.parents("tr");
 		var usbKey = $this.parents("tr").find('.first').text();
 
-		delete lockExist[usbKey];
+		delete p5mini.lockExist[usbKey];
 	
 		$(node_delete).remove();
 		//no items, reset accountId
 		if($("#lockForm").find('.continue-confirm').length===0){
-			accountId ={};
+			p5mini.accountId ={};
+			p5mini.lockExist ={};
+			p5mini.accountIdCheck = true;
 			$('.btn-sub').attr('disabled','true');
 			$('.btn-sub').css('color','grey');
 		}
@@ -547,18 +225,55 @@ $(function(){
 		
 		window.open(window.visitor.path+'/order/list');
 	});
+	
 
-	$('.footer-text label').on('click',function(){
-		$('.footer-text').find('ol').show();
-	})
+  	var joinFormStr = function(){
+  		var trs = $('tr[class!=tdheader]');
+  		
+  		var str=[];
 
-	$(".btn-sub").on('click',function(e){
+  		$.each(trs,function(i,item){
+  			var $item = $(item);
+  			var lockId = $item.find('input[name=lockId]').val();
+  			var lockType =$item.find('input[name=lockType]').val();
+  			var nodeNum = $item.find('input[name=nodeNum]').val();
+  			var suiteId = $item.find('select').val();
+
+  			var string_='lockId='+lockId+
+  				'&'+'lockType='+lockType+
+  				'&'+'nodeNum=' + nodeNum +
+  				'&'+'suiteId=' + suiteId;
+  				str.push(string_);
+  		})
+
+  		return'http:'+window.visitor.path+ '/buyP5?'+str.join('&');  		
+  	}
+
+	$(".btn-submit").on('click',function(e){
+		if($("#lockForm").find('.continue-confirm').length>0){
+			var strToSubmit = joinFormStr();
+			window.open(strToSubmit);
+			// openWebBrowser(strToSubmit);
+		}
 
   		var $this = $(this);			
 	  		$this.removeClass('btn-sub');
 	  		$this.addClass('btn-clickon');
 
   	});
+ 
+
+  	// $('.close').on('click',function(){
+  	// 	GPPWebViewLmpl.close();
+  	// })
+
+  	// $('.minimize').on('click',function(){
+  	// 	GPPWebViewLmpl.minimize();
+  	// })
+
+  	// $('.input-panel .btn').on('click',function(){
+  	// 	GPPWebViewLmpl.checkLock();
+  	// })
 
 })
 
